@@ -18,4 +18,7 @@ class SiswaController extends Controller
 
         return SiswaResource::collection($siswa);
     }
+
+    //post siswa
+    
 }

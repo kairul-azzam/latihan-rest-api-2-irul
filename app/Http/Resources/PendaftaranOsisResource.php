@@ -21,6 +21,8 @@ class PendaftaranOsisResource extends JsonResource
                 'id' => $this->siswa->id,
                 'nis' => $this->siswa->nis,
                 'nama' => $this->siswa->nama,
+                'jenis_kelamin_id' => $this->siswa->jenis_kelamin_id,
+                'kelas_id' => $this->siswa->kelas_id,
             ];
 
             if ($this->siswa->relationLoaded('kelas') && $this->siswa->kelas) {

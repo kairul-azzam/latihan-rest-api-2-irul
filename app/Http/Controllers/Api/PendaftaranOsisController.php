@@ -21,7 +21,8 @@ class PendaftaranOsisController extends Controller
         // GET daftar pendaftaran seharusnya menyertakan data kelas dan jenis kelamin melalui relasi siswa.
         // Jalankan GET /api/pendaftaran-osis di Postman dan periksa object siswa pada setiap item.
         // Mengapa data kelas dan jenis kelamin belum muncul pada daftar, padahal pada GET detail sudah lengkap?
-        $pendaftaran = PendaftaranOsis::with('siswa')->get();
+
+        $pendaftaran = PendaftaranOsis::with(['siswa.kelas', 'siswa.jenisKelamin'])->get();
 
         return PendaftaranOsisResource::collection($pendaftaran);
     }
@@ -53,27 +54,28 @@ class PendaftaranOsisController extends Controller
             // Kirim POST /api/pendaftaran-osis dengan siswa_id yang tidak ada (misal: 9999).
             // Amati apakah request ditolak dengan status 422 atau justru menyebabkan error database.
             // Aturan validasi apa yang harus ditambahkan pada siswa_id?
+
             //
             // TODO LATIHAN L3:
             // Satu siswa hanya boleh memiliki satu pendaftaran OSIS.
             // Kirim dua kali POST /api/pendaftaran-osis valid dengan siswa_id yang sama.
             // Bandingkan respons request kedua dan periksa apakah jumlah record di database bertambah.
             // Di mana dan bagaimana pencegahan pendaftaran ganda ini seharusnya divalidasi?
-            'siswa_id' => ['required', 'integer'],
+            'siswa_id' => ['required', 'integer', 'exists:siswa,id', 'unique:pendaftaran_osis,siswa_id'],
 
             // TODO LATIHAN L4:
             // Pilihan bidang pendaftaran wajib dibatasi hanya pada: kepemimpinan, keagamaan, olahraga, atau seni.
             // Kirim POST / PUT dengan nilai pilihan_bidang di luar keempat opsi tersebut (misal: "robotik").
             // Periksa apakah request tersebut lolos atau ditolak dengan HTTP 422.
             // Bagaimana membatasi nilai input agar hanya menerima opsi yang diizinkan?
-            'pilihan_bidang' => ['required', 'string'],
+            'pilihan_bidang' => ['required', 'string', 'in:kepemimpinan,keagamaan,olahraga,seni'],
 
             // TODO LATIHAN L5:
             // Motivasi wajib memiliki panjang antara 20 sampai 300 karakter.
             // Uji dengan mengirim teks motivasi yang terlalu pendek (19 karakter) atau terlalu panjang (301 karakter).
             // Amati apakah validasi menolak input tersebut dengan status 422.
             // Batasan panjang karakter apa yang belum diterapkan pada validasi ini?
-            'motivasi' => ['required', 'string'],
+            'motivasi' => ['required', 'string', 'min:20', 'max:300'],
         ]);
 
         $pendaftaran = PendaftaranOsis::create([
@@ -91,7 +93,7 @@ class PendaftaranOsisController extends Controller
         return response()->json([
             'message' => 'Pendaftaran berhasil dibuat.',
             'data' => new PendaftaranOsisResource($pendaftaran),
-        ], 200);
+        ], 201);
     }
 
     /**
@@ -117,7 +119,7 @@ class PendaftaranOsisController extends Controller
                 'required',
                 'integer',
                 'exists:siswa,id',
-                'unique:pendaftaran_osis,siswa_id',
+                'unique:pendaftaran_osis,siswa_id,' . $pendaftaran->id,
             ],
 
             // TODO LATIHAN L4:
@@ -125,14 +127,14 @@ class PendaftaranOsisController extends Controller
             // Kirim POST / PUT dengan nilai pilihan_bidang di luar keempat opsi tersebut (misal: "robotik").
             // Periksa apakah request tersebut lolos atau ditolak dengan HTTP 422.
             // Bagaimana membatasi nilai input agar hanya menerima opsi yang diizinkan?
-            'pilihan_bidang' => ['required', 'string'],
+            'pilihan_bidang' => ['required', 'string' , 'in:kepemimpinan,keagamaan,olahraga,seni'],
 
             // TODO LATIHAN L5:
             // Motivasi wajib memiliki panjang antara 20 sampai 300 karakter.
             // Uji dengan mengirim teks motivasi yang terlalu pendek (19 karakter) atau terlalu panjang (301 karakter).
             // Amati apakah validasi menolak input tersebut dengan status 422.
             // Batasan panjang karakter apa yang belum diterapkan pada validasi ini?
-            'motivasi' => ['required', 'string'],
+            'motivasi' => ['required', 'string' , 'min:20', 'max:300'],
         ]);
 
         // TODO LATIHAN L8:
@@ -141,7 +143,9 @@ class PendaftaranOsisController extends Controller
         // Mengapa nilai pilihan_bidang dan motivasi di database tidak berubah meskipun API mengembalikan pesan berhasil?
         // Field apa saja yang diteruskan pada proses update model?
         $pendaftaran->update([
-            'siswa_id' => $validated['siswa_id'],
+            'siswa_id' => $validated['siswa_id' ],
+            'pilihan_bidang' => $validated['pilihan_bidang'],
+            'motivasi' => $validated['motivasi'],
         ]);
 
         $pendaftaran->load(['siswa.kelas', 'siswa.jenisKelamin']);
@@ -171,6 +175,8 @@ class PendaftaranOsisController extends Controller
         // Respons mengembalikan 204 No Content, tetapi lakukan GET detail atau cek database: datanya ternyata masih ada!
         // Operasi apa yang belum dipanggil pada instance model pendaftaran sebelum mengembalikan respons?
 
-        return response()->noContent();
+        return response()->json([
+            'message' => 'Pendaftaran berhasil dihapus.'
+        ], 204);
     }
 }
